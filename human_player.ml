@@ -9,7 +9,7 @@ struct
       let m = PlayerGame.move_of_string (read_line ()) in
       (* TODO: replace the below expression (between the if and then)
        *       with the proper functionality *)
-      if (* m represents a legal move *) then m
+      if (List.mem m (PlayerGame.legal_moves s)) then m
       else
         let () = print_endline "Illegal move."
         in next_move s
