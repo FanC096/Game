@@ -89,7 +89,7 @@ struct
     | player, [], m, j -> failwith "Hey Ocaml, this is not going to happen"
 
   let rec row_in_column : int list -> int = function  lst ->
-    List.length (List.filter (function x -> (not (x =0))) lst) 
+    List.length (List.filter (function x -> (not (x =0))) lst)
 
   let rec row_column_of_move : int list list * int * int -> int * int list= function
       col::[], m, j -> if m = j
@@ -119,11 +119,52 @@ struct
       board, row_index -> let row = extract_row (board, row_index) in
                          check_win_column (row, 0, List.hd row)
 
+  let rec make_diagonal_left : int list list * int -> int list = function
+      [], _ -> []
+    | hd :: tl, c -> if c > ((List.length (hd)) - 1)
+                     then []
+                     else (List.nth hd c) :: make_diagonal_left (tl, (c + 1))
+
+  (* let rec make_diagonal_right : int list list * int -> int list = function
+      [], _ -> []
+    | _, -1 -> []
+    | hd :: tl, c -> (List.nth hd c) :: make_diagonal_right (tl, (c - 1)) ;; *)
+
+  let rec extract_diag_left_vert : int list list -> int list list = function
+      [] -> []
+    | hd::tl -> (make_diagonal_left ((hd::tl),0))::(extract_diag_left_vert tl)
+
+  let rec extract_diag_left_horz : int list list -> int list list = function
+      []::tl -> []
+    | mat -> (make_diagonal_left (mat,0))::
+             (extract_diag_left_horz (List.map List.tl mat))
+
+  (* let rec extract_diag_right_vert : int list list -> int list list = function
+      [] -> []
+    | hd::tl -> (make_diagnol_right ((hd::tl), (List.length (List.hd hd))-1))::
+                (extract_diag_right_vert tl)
+
+(*not implemented yet*)
+  let rec extract_diag_right_horz : int list list -> int list list = function
+      [[]::tl] -> []
+    | mat -> (make_diagnol_right mat)::
+             (extract_diag_right_horz (List.map List.tl mat)) *)
+
+  let check_win_diagonal : int list list -> bool = function
+      board -> let revboard = List.map List.rev board in
+               List.fold_left
+               (function winP -> function diag ->
+                      winP || check_win_column (diag, 0, List.hd diag))
+               false
+               ((extract_diag_left_horz board)@(extract_diag_left_vert board)@
+                (extract_diag_left_horz revboard)@(extract_diag_left_vert revboard))
+
   let check_win : int list list * int -> bool = function
      board, m -> match row_column_of_move (board, m ,1) with
        row_index, col ->
                  (check_win_column (col, 0, List.hd col))
               || (check_win_row (board, row_index))
+              || (check_win_diagonal board)
 
   let next_state : state -> move -> state = function State(p, board) -> function Move m ->
      match (p, m) with
