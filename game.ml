@@ -39,7 +39,6 @@ struct
       a, b-> if (a <= 0) || (b <= 0)
              then failwith "positive size!"
              else combine_columns ((create_column a), b)
-    | _ -> failwith "the size should be a tuple of ints"
 
   let initial_state = State ((Ongoing P1), initialize X.size)
 
@@ -90,56 +89,70 @@ struct
     | player, [], m, j -> failwith "Hey Ocaml, this is not going to happen"
 
   let rec row_in_column : int list -> int = function  lst ->
-    List.length (List.filter (function x -> not (x =0) lst)) + 1
+    List.length (List.filter (function x -> (not (x =0))) lst) 
 
-  let rec row_of_move : int list list * int * int -> int * int list= function
+  let rec row_column_of_move : int list list * int * int -> int * int list= function
       col::[], m, j -> if m = j
                        then ((row_in_column col), col)
                        else failwith "illegal move"
     | col::tl, m, j -> if m = j
                        then ((row_in_column col), col)
-                       else ((row_of_move (tl, m, j+1)), col)
+                       else row_column_of_move (tl, m, j + 1)
     | [], m, j -> failwith "never going to happen"
 
-  let rec check_win_row : int list list * int = function
-    
+  let rec extract_in_row : int -> int list -> int = function index -> function
+      [] -> failwith "wrong row_index"
+    | hd::tl -> if index  = 1 then hd else extract_in_row (index - 1) tl
+
+  let rec extract_row : int list list * int -> int list = function
+      board, row_index -> List.map (extract_in_row row_index) board
 
   let rec check_win_column : int list * int * int -> bool = function
       [], num, prev -> num = 4
     | hd::tl, num, prev -> (num = 4)
                        || ((not (hd = 0))
-                          && (((hd = prev) && (check_win_column (tl, num+1, hd)))
-                              || ((not (hd = prev)) && (check_win_column (tl, 1, hd)))))
+                          && (((hd = prev) && (check_win_column (tl, num + 1, hd)))
+                              || ((not (hd = prev)) && (check_win_column (tl, 0, hd)))))
+                       || ((hd = 0) && (check_win_column (tl, 0, hd)))
+
+  let rec check_win_row : int list list * int -> bool = function
+      board, row_index -> let row = extract_row (board, row_index) in
+                         check_win_column (row, 0, List.hd row)
 
   let check_win : int list list * int -> bool = function
-     board, m -> match row_of_move (board, m ,1) with
+     board, m -> match row_column_of_move (board, m ,1) with
        row_index, col ->
-                 (check_win_column (col, 1, List.hd col))
-              || (check_win_row (board, row_index)
+                 (check_win_column (col, 0, List.hd col))
+              || (check_win_row (board, row_index))
 
-  let next_state : (state * move)  -> state = function (State(p, board), Move m) ->
+  let next_state : state -> move -> state = function State(p, board) -> function Move m ->
      match (p, m) with
       | Win(_), _ -> State (p, board)
       | Draw, _ -> State (p, board)
-      | Ongoing player, m -> if check_win (board, m)
-                             then State ((Win player), make_move (player, board, m, 1))
-                             else State ((Ongoin (other_player player)), make_move (player, board, m, 1))
+      | Ongoing player, m -> let newboard = make_move (player, board, m, 1) in
+                             if check_win (newboard, m)
+                             then State ((Win player), newboard)
+                             else State ((Ongoing (other_player player)),newboard)
 
-  let rec fullP : int list -> bool = function
-      [a] -> not (a = 0)
-    | hd::tl -> fullP tl
+  let rec not_fullP : int list -> bool = function
+      [a] -> a = 0
+    | hd::tl -> not_fullP tl
+    | [] -> failwith "not going to have an empty column as input"
 
-  let rec full_columns : int int list * int -> int list = function
-      [lst], n -> if fullP lst then [n] else []
-    | lst::tl, n -> if fullP lst
-                   then n::full_columns (tl, n + 1)
-                   else full_columns(tl, n + 1)
+  let rec not_full_columns : int list list * int -> move list = function
+      [lst], n -> if not_fullP lst then [Move n] else []
+    | lst::tl, n -> if not_fullP lst
+                   then Move n::not_full_columns (tl, n + 1)
+                   else not_full_columns(tl, n + 1)
+    | [], n -> failwith "not going to have an empty board as input"
 
   let legal_moves : state -> move list = function State (p, n)->
-    full_columns (n, 1)
+    not_full_columns (n, 1)
 
 
   let estimate_value : state -> float = function State(p, n) -> 0.
+
+  let move_of_string : string -> move = function str -> Move (int_of_string str)
 
   (* TODO: implement your game with the rest of the GAME signature *)
 
