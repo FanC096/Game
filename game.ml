@@ -89,7 +89,7 @@ struct
     | player, [], m, j -> failwith "Hey Ocaml, this is not going to happen"
 
   let rec row_in_column : int list -> int = function  lst ->
-    List.length (List.filter (function x -> (not (x =0))) lst) 
+    List.length (List.filter (function x -> (not (x =0))) lst)
 
   let rec row_column_of_move : int list list * int * int -> int * int list= function
       col::[], m, j -> if m = j
@@ -118,6 +118,14 @@ struct
   let rec check_win_row : int list list * int -> bool = function
       board, row_index -> let row = extract_row (board, row_index) in
                          check_win_column (row, 0, List.hd row)
+
+let rec check_win_diagonal : int list list -> bool = function
+ _ -> failwith "not yet implemented"
+
+(* c initially should be number of columns minus 1 *)
+ let rec make_diagonal : int list list * int -> int list = function
+     [], _ -> []
+   | hd :: tl, c -> (List.nth hd c) :: make_diagonal (tl, (c - 1)) ;;
 
   let check_win : int list list * int -> bool = function
      board, m -> match row_column_of_move (board, m ,1) with
@@ -151,6 +159,10 @@ struct
 
 
   let estimate_value : state -> float = function State(p, n) -> 0.
+    (* match legal_moves (State(p, n)) with
+
+      | hd::tl -> match (next_state hd) with *)
+
 
   let move_of_string : string -> move = function str -> Move (int_of_string str)
 
