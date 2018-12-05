@@ -1,4 +1,5 @@
 #use "sig_game.ml" ;;
+#use "game.ml";;
 
 module AIPlayer = functor (Game: GAME) ->
 struct
@@ -19,18 +20,18 @@ struct
         | (best_move, best_value), next_legal_move::tl ->
            match player, minimax ((PlayerGame.next_state s next_legal_move), level - 1, best_value) with
              PlayerGame.P1, (_, next_value) ->
-               if next_value > pre_value then (next_legal_move, next_value) else
+               if best_value > pre_value then (best_move, best_value) else
                  if next_value > best_value
                  then minimax_helper ((next_legal_move, next_value), tl)
                  else minimax_helper ((best_move, best_value), tl)
            | PlayerGame.P2, (_, next_value) ->
-               if next_value < pre_value then (next_legal_move, next_value) else
+               if best_value < pre_value then (best_move, best_value) else
                  if next_value < best_value
                  then minimax_helper ((next_legal_move, next_value), tl)
                  else minimax_helper ((best_move, best_value), tl) in
 
           minimax_helper ((List.hd (PlayerGame.legal_moves s),
-                            if player = PlayerGame.P1 then - 2. else 2.),
+                            if player = PlayerGame.P1 then -2. else 2.),
                          (PlayerGame.legal_moves s))
 
   let next_move s=
@@ -44,3 +45,14 @@ struct
 end ;;
 
 (* TODO: test cases for AIPlayer *)
+(* module AITest = AIPlayer (Connect4fiveseven) ;;
+Open AITest;;
+#trace minimax;;
+AITest.minimax (State ((Ongoing P2),
+[[2;2;1;2;0];
+[2;0;0;0;0];
+[2;2;0;0;0];
+[1;1;1;2;0];
+[1;0;0;0;0];
+[1;1;1;0;0];
+[2;0;0;0;0]]), 4, -10.);; *)
