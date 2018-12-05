@@ -3,6 +3,6 @@
 #use "referee.ml" ;;
 #use "human_player.ml" ;;
 
-module HumanHumanReferee = Referee(Connect4fiveseven) (HumanPlayer(Connect4fiveseven)) (HumanPlayer(Connect4fiveseven)) ;;
+module HumanHumanReferee = Referee(Connect4fiveseven) (HumanPlayer(Connect4fiveseven)) (AIPlayer(Connect4fiveseven)) ;;
 open HumanHumanReferee ;;
 play_game();;
