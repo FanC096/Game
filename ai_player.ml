@@ -7,19 +7,19 @@ struct
 
   (* TODO *)
 
-  let rec minimax : PlayerGame.state * int * float -> PlayerGame.move * float = function
-    s, 0, _ -> (List.hd (PlayerGame.legal_moves s), PlayerGame.estimate_value s)
-  | s, level, pre_value ->
+  let rec minimax : PlayerGame.state * int * float * PlayerGame.move -> PlayerGame.move * float = function
+    s, 0, _, m -> (m, PlayerGame.estimate_value s)
+  | s, level, pre_value, m ->
     match PlayerGame.game_status s with
-      PlayerGame.Draw-> (List.hd (PlayerGame.legal_moves s), 0.)
+      PlayerGame.Draw-> (m, 0.)
     | PlayerGame.Win player ->
-         (List.hd (PlayerGame.legal_moves s), if player = PlayerGame.P1 then infinity else neg_infinity)
+         (m, if player = PlayerGame.P1 then infinity else neg_infinity)
     | PlayerGame.Ongoing player ->
 
         let rec minimax_helper : (PlayerGame.move * float) * PlayerGame.move list -> PlayerGame.move * float = function
           (best_move, best_value), [] -> best_move, best_value
         | (best_move, best_value), next_legal_move::tl ->
-           match player, minimax ((PlayerGame.next_state s next_legal_move), level - 1, best_value) with
+           match player, minimax ((PlayerGame.next_state s next_legal_move), level - 1, best_value, m) with
              PlayerGame.P1, (_, next_value) ->
                if next_value > pre_value then (best_move, next_value) else
                  if next_value > best_value
@@ -37,9 +37,10 @@ struct
 
   let next_move s=
     match minimax (s, 5,
-                   if (PlayerGame.game_status s) = PlayerGame.Ongoing PlayerGame.P2
+                   (if (PlayerGame.game_status s) = PlayerGame.Ongoing PlayerGame.P2
                    then neg_infinity
-                   else infinity )
+                   else infinity),
+                   (List.hd (PlayerGame.legal_moves s)))
    with
       (m, v) -> m
 
