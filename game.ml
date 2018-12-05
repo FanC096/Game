@@ -190,8 +190,72 @@ struct
   let legal_moves : state -> move list = function State (p, n)->
     not_full_columns (n, 1)
 
+  (* from lecture notes *)
+  let rec take : int * 'a list -> 'a list =
+    function (n, alod) ->
+    match n, alod with
+      0, _ -> []
+    | n, hd::tl -> hd::take (n-1, tl)
+    | _, _ -> failwith "Error" ;;
 
-  let estimate_value : state -> float = function State(p, n) -> 0.
+  let pattern_list : (int list * float) list =
+      [([1; 0; 1; 1], 3.); ([1; 1; 0; 1], 3.); ([0; 1; 1; 1; 0], 3.5); ([1; 1; 1; 0], 3.);
+       ([0; 1; 1; 1], 3.); ([0; 1; 0; 1; 0], 2.5); ([0; 1; 0; 1], 2.); ([1; 0; 1; 0], 2.);
+       ([0; 1; 1; 0; 0], 2.5); ([0; 0; 1; 1; 0], 2.5); ([0; 0; 1; 1], 2.); ([1; 1; 0; 0], 2.);
+       ([0; 1; 1; 0], 2.); ([0; 0; 1; 0], 1.5); ([0; 1; 0; 0], 1.5); ([0; 0; 0; 1], 1.); ([1; 0; 0; 0], 1.);
+       ([2; 0; 2; 2], -3.); ([2; 2; 0; 2], -3.); ([0; 2; 2; 2; 0], -3.5); ([2; 2; 2; 0], -3.);
+       ([0; 2; 2; 2], -3.); ([0; 2; 0; 2; 0], -2.5); ([0; 2; 0; 2], -2.); ([2; 0; 2; 0], -2.);
+       ([0; 2; 2; 0; 0], -2.5); ([0; 0; 2; 2; 0], -2.5); ([0; 0; 2; 2], -2.); ([2; 2; 0; 0], -2.);
+       ([0; 2; 2; 0], -2.); ([0; 0; 2; 0], -1.5); ([0; 2; 0; 0], -1.5); ([0; 0; 0; 2], -1.); ([2; 0; 0; 0], -1.)]
+
+  let rec value_helper_helper : int list * (int list * float) list -> float = function
+      (hd1::tl1, ((pat, v)::tl2)) -> if (List.length (hd1::tl1)) < (List.length pat) then value_helper_helper (hd1::tl1, tl2)
+                                     else if (take ((List.length pat), hd1::tl1)) = pat
+                                          then v
+                                          else if (List.length tl1) >= (List.length pat)
+                                               then value_helper_helper (tl1, ((pat, v)::tl2))
+                                               else if tl2 = []
+                                                    then 0.
+                                                    else value_helper_helper (tl1, tl2)
+    | (_, []) | ([], _) -> 0.
+
+    (* if (take ((List.length pat), hd1::tl1)) = pat then v
+                                       else if (List.length tl1) >= (List.length pat)
+                                       then value_helper_helper (tl1, ((pat, v)::tl2))
+                                       else if tl2 = []
+                                            then 0.
+                                            else value_helper_helper (tl1, tl2)
+      | (_::_, []) | ([], _) ->  *)
+
+      (* | _ -> if tl1 = [] then 0. else value_helper_helper (tl1, ) *)
+        (* [1; 0; 1; 1] -> take
+      | [1; 1; 0; 1] ->
+      | [0; 1; 1; 1; 0] -> *
+      | [1; 1; 1; 0] | [0; 1; 1; 1] ->
+      | [0; 1; 0; 1; 0] -> *
+      | [0; 1; 0; 1] | [1; 0; 1; 0] ->
+      | [0; 1; 1; 0] ->
+      | [0; 1; 1; 0; 0] | [0; 0; 1; 1; 0] -> *
+      | [0; 0; 1; 1] | [1; 1; 0; 0] ->
+      | [0; 0; 1; 0] | [0; 1; 0; 0] -> *
+      | [0; 0; 0; 1] | [1; 0; 0; 0] -> *)
+
+  let rec value_helper : int list list -> float = function
+        [] -> 0.
+      | (hd::tl) -> (value_helper_helper (hd, pattern_list)) +. (value_helper tl)
+      (* with
+                        0. -> 0. +. (value_helper tl)
+                      | flt -> flt +. (value_helper tl) *)
+      (* | _ -> if tl = [] then 0. else value_helper tl *)
+
+  let estimate_value : state -> float = function State(p, n) ->
+    match p with
+        Win(P1) -> infinity
+      | Win(P2) -> neg_infinity
+      | Ongoing(u) -> (value_helper n) +. (value_helper (transpose n))
+                            +. (value_helper (extract_diag_left_vert n))
+                              +. (value_helper (extract_diag_left_horz n))
+      | _ -> 0.
     (* match legal_moves (State(p, n)) with
 
       | hd::tl -> match (next_state hd) with *)
