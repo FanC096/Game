@@ -112,23 +112,18 @@ struct
     | hd::tl, num, prev -> (num = 4)
                        || ((not (hd = 0))
                           && (((hd = prev) && (check_win_column (tl, num + 1, hd)))
-                              || ((not (hd = prev)) && (check_win_column (tl, 0, hd)))))
+                              || ((not (hd = prev)) && (check_win_column (tl, 1, hd)))))
                        || ((hd = 0) && (check_win_column (tl, 0, hd)))
 
   let rec check_win_row : int list list * int -> bool = function
       board, row_index -> let row = extract_row (board, row_index) in
-                         check_win_column (row, 0, List.hd row)
+                          check_win_column (row, 0, List.hd row)
 
   let rec make_diagonal_left : int list list * int -> int list = function
       [], _ -> []
     | hd :: tl, c -> if c > ((List.length (hd)) - 1)
                      then []
                      else (List.nth hd c) :: make_diagonal_left (tl, (c + 1))
-
-  (* let rec make_diagonal_right : int list list * int -> int list = function
-      [], _ -> []
-    | _, -1 -> []
-    | hd :: tl, c -> (List.nth hd c) :: make_diagonal_right (tl, (c - 1)) ;; *)
 
   let rec extract_diag_left_vert : int list list -> int list list = function
       [] -> []
@@ -138,17 +133,6 @@ struct
       []::tl -> []
     | mat -> (make_diagonal_left (mat,0))::
              (extract_diag_left_horz (List.map List.tl mat))
-
-  (* let rec extract_diag_right_vert : int list list -> int list list = function
-      [] -> []
-    | hd::tl -> (make_diagnol_right ((hd::tl), (List.length (List.hd hd))-1))::
-                (extract_diag_right_vert tl)
-
-(*not implemented yet*)
-  let rec extract_diag_right_horz : int list list -> int list list = function
-      [[]::tl] -> []
-    | mat -> (make_diagnol_right mat)::
-             (extract_diag_right_horz (List.map List.tl mat)) *)
 
   let check_win_diagonal : int list list -> bool = function
       board -> let revboard = List.map List.rev board in
@@ -261,7 +245,11 @@ struct
       | hd::tl -> match (next_state hd) with *)
 
 
-  let move_of_string : string -> move = function str -> Move (int_of_string str)
+  let move_of_string : string -> move = function str ->
+  try
+    Move (int_of_string str)
+  with
+    _ -> failwith "input of move must be an int between 1 and width of the board"
 
   (* TODO: implement your game with the rest of the GAME signature *)
 
