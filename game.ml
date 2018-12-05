@@ -150,15 +150,6 @@ struct
               || (check_win_row (board, row_index))
               || (check_win_diagonal board)
 
-  let next_state : state -> move -> state = function State(p, board) -> function Move m ->
-     match (p, m) with
-      | Win(_), _ -> State (p, board)
-      | Draw, _ -> State (p, board)
-      | Ongoing player, m -> let newboard = make_move (player, board, m, 1) in
-                             if check_win (newboard, m)
-                             then State ((Win player), newboard)
-                             else State ((Ongoing (other_player player)),newboard)
-
   let rec not_fullP : int list -> bool = function
       [a] -> a = 0
     | hd::tl -> not_fullP tl
@@ -174,6 +165,17 @@ struct
   let legal_moves : state -> move list = function State (p, n)->
     not_full_columns (n, 1)
 
+  let next_state : state -> move -> state = function State(p, board) -> function Move m ->
+     match (p, m) with
+      | Win(_), _ -> State (p, board)
+      | Draw, _ -> State (p, board)
+      | Ongoing player, m -> let newboard = make_move (player, board, m, 1) in
+                             if check_win (newboard, m)
+                             then State ((Win player), newboard) else
+                               if legal_moves (State (Ongoing(player), newboard)) = []
+                               then State (Draw, newboard)
+                               else State ((Ongoing (other_player player)),newboard)
+
   (* from lecture notes *)
   let rec take : int * 'a list -> 'a list =
     function (n, alod) ->
@@ -183,16 +185,16 @@ struct
     | _, _ -> failwith "Error" ;;
 
   let pattern_list_positive : (int list * float) list =
-      [([1; 0; 1; 1], 3.); ([1; 1; 0; 1], 3.); ([0; 1; 1; 1; 0], 3.5); ([1; 1; 1; 0], 3.);
-       ([0; 1; 1; 1], 3.); ([0; 1; 0; 1; 0], 2.5); ([0; 1; 0; 1], 2.); ([1; 0; 1; 0], 2.);
-       ([0; 1; 1; 0; 0], 2.5); ([0; 0; 1; 1; 0], 2.5); ([0; 0; 1; 1], 2.); ([1; 1; 0; 0], 2.);
-       ([0; 1; 1; 0], 2.); ([0; 0; 1; 0], 1.5); ([0; 1; 0; 0], 1.5); ([0; 0; 0; 1], 1.); ([1; 0; 0; 0], 1.)]
+      [([0; 0; 1; 0; 0], 30.); ([1; 0; 1; 1], 30.); ([1; 1; 0; 1], 30.); ([0; 1; 1; 1; 0], 500.); ([1; 1; 1; 0], 30.);
+       ([0; 1; 1; 1], 30.); ([0; 1; 0; 1; 0], 15.); ([0; 1; 0; 1], 12.); ([1; 0; 1; 0], 12.);
+       ([0; 1; 1; 0; 0], 10.); ([0; 0; 1; 1; 0], 10.); ([0; 0; 1; 1], 7.); ([1; 1; 0; 0], 7.);
+       ([0; 1; 1; 0], 9.); ([0; 0; 1; 0], 5.); ([0; 1; 0; 0], 5.); ([0; 0; 0; 1], 3.); ([1; 0; 0; 0], 3.)]
 
   let pattern_list_negative : (int list * float) list =
-      [([2; 0; 2; 2], -3.); ([2; 2; 0; 2], -3.); ([0; 2; 2; 2; 0], -3.5); ([2; 2; 2; 0], -3.);
-       ([0; 2; 2; 2], -3.); ([0; 2; 0; 2; 0], -2.5); ([0; 2; 0; 2], -2.); ([2; 0; 2; 0], -2.);
-       ([0; 2; 2; 0; 0], -2.5); ([0; 0; 2; 2; 0], -2.5); ([0; 0; 2; 2], -2.); ([2; 2; 0; 0], -2.);
-       ([0; 2; 2; 0], -2.); ([0; 0; 2; 0], -1.5); ([0; 2; 0; 0], -1.5); ([0; 0; 0; 2], -1.); ([2; 0; 0; 0], -1.)]
+      [([0; 0; 2; 0; 0], -30.); ([2; 0; 2; 2], -30.); ([2; 2; 0; 2], -30.); ([0; 2; 2; 2; 0], -500.); ([2; 2; 2; 0], -30.);
+       ([0; 2; 2; 2], -30.); ([0; 2; 0; 2; 0], -15.); ([0; 2; 0; 2], -12.); ([2; 0; 2; 0], -12.);
+       ([0; 2; 2; 0; 0], -10.); ([0; 0; 2; 2; 0], -10.); ([0; 0; 2; 2], -7.); ([2; 2; 0; 0], -7.);
+       ([0; 2; 2; 0], -9.); ([0; 0; 2; 0], -5.); ([0; 2; 0; 0], -5.); ([0; 0; 0; 2], -3.); ([2; 0; 0; 0], -3.)]
 
   let rec value_helper_helper : int list * (int list * float) list -> float = function
       (hd1::tl1, ((pat, v)::tl2)) -> if (List.length (hd1::tl1)) < (List.length pat) then value_helper_helper (hd1::tl1, tl2)
