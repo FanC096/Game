@@ -54,6 +54,12 @@ struct
     | (hd1 :: []) :: tl -> List.map List.hd mat::[]
     | (hd1 :: tl1) :: tl -> List.map List.hd mat::transpose (List.map List.tl mat);;
 
+  let string_of_piece : int -> string = function
+      0 -> "*"
+    | 1 -> "1"
+    | 2 -> "2"
+    | _ -> failwith "piece must be int"
+
   let string_of_state : state -> string = function State(s,n) ->
     match s with
       | Win(p) -> string_of_player p ^ "wins!"
@@ -65,7 +71,7 @@ struct
                         (List.map
                           (function lst ->
                             (List.fold_left
-                            (function str-> function a -> str^" "^(string_of_int a))
+                            (function str-> function a -> str^" "^(string_of_piece a))
                             ""
                             lst))
                           (transpose (List.map List.rev n))))
@@ -185,26 +191,28 @@ struct
     | _, _ -> failwith "Error" ;;
 
   let pattern_list_positive : (int list * float) list =
-      [([0; 0; 1; 0; 0], 30.); ([1; 0; 1; 1], 30.); ([1; 1; 0; 1], 30.); ([0; 1; 1; 1; 0], 500.); ([1; 1; 1; 0], 30.);
-       ([0; 1; 1; 1], 30.); ([0; 1; 0; 1; 0], 15.); ([0; 1; 0; 1], 12.); ([1; 0; 1; 0], 12.);
+      [([0; 0; 1; 0; 0], 20.); ([0; 1; 1; 1; 0], 500.); ([1; 1; 1; 0], 50.);  ([0; 1; 1; 1], 50.); ([1; 0; 1; 1], 30.);
+       ([1; 1; 0; 1], 30.); ([0; 1; 0; 1; 0], 15.); ([0; 1; 0; 1], 12.); ([1; 0; 1; 0], 12.);
        ([0; 1; 1; 0; 0], 10.); ([0; 0; 1; 1; 0], 10.); ([0; 0; 1; 1], 7.); ([1; 1; 0; 0], 7.);
        ([0; 1; 1; 0], 9.); ([0; 0; 1; 0], 5.); ([0; 1; 0; 0], 5.); ([0; 0; 0; 1], 3.); ([1; 0; 0; 0], 3.)]
 
   let pattern_list_negative : (int list * float) list =
-      [([0; 0; 2; 0; 0], -30.); ([2; 0; 2; 2], -30.); ([2; 2; 0; 2], -30.); ([0; 2; 2; 2; 0], -500.); ([2; 2; 2; 0], -30.);
-       ([0; 2; 2; 2], -30.); ([0; 2; 0; 2; 0], -15.); ([0; 2; 0; 2], -12.); ([2; 0; 2; 0], -12.);
+      [([0; 0; 2; 0; 0], -20.); ([0; 2; 2; 2; 0], -500.); ([2; 2; 2; 0], -50.); ([0; 2; 2; 2], -50.); ([2; 0; 2; 2], -30.);
+       ([2; 2; 0; 2], -30.); ([0; 2; 0; 2; 0], -15.); ([0; 2; 0; 2], -12.); ([2; 0; 2; 0], -12.);
        ([0; 2; 2; 0; 0], -10.); ([0; 0; 2; 2; 0], -10.); ([0; 0; 2; 2], -7.); ([2; 2; 0; 0], -7.);
        ([0; 2; 2; 0], -9.); ([0; 0; 2; 0], -5.); ([0; 2; 0; 0], -5.); ([0; 0; 0; 2], -3.); ([2; 0; 0; 0], -3.)]
 
   let rec value_helper_helper : int list * (int list * float) list -> float = function
-      (hd1::tl1, ((pat, v)::tl2)) -> if (List.length (hd1::tl1)) < (List.length pat) then value_helper_helper (hd1::tl1, tl2)
-                                     else if (take ((List.length pat), hd1::tl1)) = pat
-                                          then v
-                                          else if (List.length tl1) >= (List.length pat)
-                                               then value_helper_helper (tl1, ((pat, v)::tl2))
-                                               else if tl2 = []
-                                                    then 0.
-                                                    else value_helper_helper (tl1, tl2)
+      (hd1::tl1, ((pat, v)::tl2)) ->
+                                  if (List.length (hd1::tl1)) < (List.length pat)
+                                  then value_helper_helper (hd1::tl1, tl2)
+                                  else if (take ((List.length pat), hd1::tl1)) = pat
+                                       then v
+                                       else if (List.length tl1) >= (List.length pat)
+                                            then value_helper_helper (tl1, ((pat, v)::tl2))
+                                            else if tl2 = []
+                                                 then 0.
+                                                 else value_helper_helper (tl1, tl2)
     | (_, []) | ([], _) -> 0.
 
     (* if (take ((List.length pat), hd1::tl1)) = pat then v
@@ -240,9 +248,14 @@ struct
     match p with
         Win(P1) -> infinity
       | Win(P2) -> neg_infinity
-      | Ongoing(u) -> (value_helper n) +. (value_helper (transpose n))
+      | Ongoing(u) -> let revn = List.map List.rev n in
+                        (value_helper n)
+                          +. (value_helper (transpose n))
+                           +. (value_helper (List.hd (transpose n)::[]))
                             +. (value_helper (extract_diag_left_vert n))
-                              +. (value_helper (extract_diag_left_horz n))
+                             +. (value_helper (extract_diag_left_horz n))
+                              +. (value_helper (extract_diag_left_vert revn))
+                               +. (value_helper (extract_diag_left_horz revn))
       | _ -> 0.
     (* match legal_moves (State(p, n)) with
 
