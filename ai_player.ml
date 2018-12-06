@@ -49,14 +49,50 @@ end ;;
 
 (* TODO: test cases for AIPlayer *)
 
-(* module AITest = AIPlayer (Connect4fiveseven) ;;
-Open AITest;;
-#trace minimax;;
-AITest.minimax (State ((Ongoing P2),
+module AITest = AIPlayer (Connect4fiveseven) ;;
+open AITest;;
+check_expect (minimax (State ((Ongoing P2),
 [[2;2;1;2;0];
 [2;0;0;0;0];
 [2;2;0;0;0];
 [1;1;1;2;0];
 [1;0;0;0;0];
 [1;1;1;0;0];
-[2;0;0;0;0]]), 4, -10.);; *)
+[2;0;0;0;0]]), 2, neg_infinity, Move 1)) (Move 6, 100.);;
+
+check_expect (next_move (State ((Ongoing P2),
+[[2;2;1;2;0];
+[2;0;0;0;0];
+[2;2;0;0;0];
+[1;1;1;2;0];
+[1;0;0;0;0];
+[1;1;1;0;0];
+[2;0;0;0;0]]))) (Move 6);;
+
+check_expect (next_move (State ((Ongoing P1),
+[[2;2;1;2;0];
+[2;0;0;0;0];
+[2;2;0;0;0];
+[1;1;1;2;0];
+[1;2;0;0;0];
+[1;1;1;0;0];
+[2;0;0;0;0]]))) (Move 2);;
+(*Move 6 is an immediate win, but Move 2 is also a guranteed win*)
+
+check_expect (next_move (State ((Ongoing P2),
+[[2;2;1;2;0];
+[2;0;0;0;0];
+[2;2;0;0;0];
+[1;1;1;2;0];
+[1;0;0;0;0];
+[1;1;1;0;0];
+[2;0;0;0;0]]))) (Move 6);;
+
+check_expect (next_move (State ((Ongoing P1),
+[[1;2;2;1;0];
+[1;2;1;0;0];
+[2;2;2;1;0];
+[1;1;1;2;0];
+[1;0;0;0;0];
+[1;2;2;0;0];
+[2;0;0;0;0]]))) (Move 5);;

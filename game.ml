@@ -280,6 +280,8 @@ end );;
 
 
 (* TODO: test cases for this Game *)
+
+open Connect4fiveseven;;
 check_expect (current_player (State ((Ongoing (P1)), []))) P1 ;;
 check_expect (current_player (State ((Ongoing (P2)), []))) P2 ;;
 check_expect (current_player (State ((Win (P1)), []))) P1 ;;
