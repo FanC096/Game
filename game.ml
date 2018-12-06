@@ -202,18 +202,19 @@ struct
        ([0; 2; 2; 0; 0], -10.); ([0; 0; 2; 2; 0], -10.); ([0; 0; 2; 2], -7.); ([2; 2; 0; 0], -7.);
        ([0; 2; 2; 0], -9.); ([0; 0; 2; 0], -5.); ([0; 2; 0; 0], -5.); ([0; 0; 0; 2], -3.); ([2; 0; 0; 0], -3.)]
 
-  let rec value_helper_helper : int list * (int list * float) list -> float = function
-      (hd1::tl1, ((pat, v)::tl2)) ->
+  let rec value_helper_helper : int list * int list * (int list * float) list -> float = function
+      (hd1::tl1, original, ((pat, v)::tl2)) ->
                                   if (List.length (hd1::tl1)) < (List.length pat)
-                                  then value_helper_helper (hd1::tl1, tl2)
+                                  then value_helper_helper (hd1::tl1, original, tl2)
                                   else if (take ((List.length pat), hd1::tl1)) = pat
                                        then v
                                        else if (List.length tl1) >= (List.length pat)
-                                            then value_helper_helper (tl1, ((pat, v)::tl2))
+                                            then value_helper_helper (tl1, original, ((pat, v)::tl2))
                                             else if tl2 = []
                                                  then 0.
-                                                 else value_helper_helper (tl1, tl2)
-    | (_, []) | ([], _) -> 0.
+                                                 else value_helper_helper (original, original, tl2)
+   | ([], original, hd::tl2) -> value_helper_helper (original, original, tl2)
+   | (_, _, [])  -> 0.
 
     (* if (take ((List.length pat), hd1::tl1)) = pat then v
                                        else if (List.length tl1) >= (List.length pat)
@@ -238,7 +239,7 @@ struct
 
   let rec value_helper : int list list -> float = function
         [] -> 0.
-      | (hd::tl) -> (value_helper_helper (hd, pattern_list_positive)) +. (value_helper_helper (hd, pattern_list_negative)) +. (value_helper tl)
+      | (hd::tl) -> (value_helper_helper (hd, hd, pattern_list_positive)) +. (value_helper_helper (hd, hd, pattern_list_negative)) +. (value_helper tl)
       (* with
                         0. -> 0. +. (value_helper tl)
                       | flt -> flt +. (value_helper tl) *)
@@ -250,13 +251,13 @@ struct
       | Win(P2) -> neg_infinity
       | Ongoing(u) -> let revn = List.map List.rev n in
                         (value_helper n)
-                          +. (value_helper (transpose n))
+                          +. 0.5 *. (value_helper (transpose n))
                            +. (value_helper (List.hd (transpose n)::[]))
-                            +. (value_helper (extract_diag_left_vert n))
-                             +. (value_helper (extract_diag_left_horz n))
-                              +. (value_helper (extract_diag_left_vert revn))
-                               +. (value_helper (extract_diag_left_horz revn))
-      | _ -> 0.
+                            +. 0.5 *. (value_helper (extract_diag_left_vert n))
+                             +. 0.5 *. (value_helper (extract_diag_left_horz n))
+                              +. 0.5 *. (value_helper (extract_diag_left_vert revn))
+                               +. 0.5 *. (value_helper (extract_diag_left_horz revn))
+      | Draw -> 0.
     (* match legal_moves (State(p, n)) with
 
       | hd::tl -> match (next_state hd) with *)
@@ -316,8 +317,132 @@ check_expect (string_of_move (Move 7)) "7" ;;
 
 check_expect (transpose [[1; 2; 3]; [4; 5; 6]]) [[1; 4]; [2; 5]; [3; 6]] ;;
 check_error (function () -> (transpose []))
-  "A matrix cannot be 0-dimensional" ;;
+  "A matrix cannot be 0-dimensional." ;;
 check_error (function () -> (transpose [[]; []]))
-  "A matrix cannot be 0-dimensional" ;;
+  "A matrix cannot be 0-dimensional." ;;
 
-check_expect (string_of_state (State ((Ongoing (P1)), []))) "It isPlayer 1's turn"
+check_expect (string_of_piece 0) "*" ;;
+check_expect (string_of_piece 1) "1" ;;
+check_expect (string_of_piece 2) "2" ;;
+check_error (function () -> (string_of_piece 9))
+  "piece must be int" ;;
+
+check_expect (string_of_state (State (Win(P1), []))) "Player 1wins!" ;;
+check_expect (string_of_state (State (Draw, []))) "Draw" ;;
+(* finish this later *)
+check_expect (string_of_state (State ((Ongoing (P1)), [[1]])))
+  "It isPlayer 1's turn \n \n  1" ;;
+
+check_expect (game_status (State ((Ongoing (P1)), []))) (Ongoing (P1)) ;;
+
+check_expect (move_in_column ([0; 0; 0], P1)) [1; 0; 0] ;;
+check_expect (move_in_column ([0; 0; 0], P2)) [2; 0; 0] ;;
+check_expect (move_in_column ([1; 2; 0], P1)) [1; 2; 1] ;;
+check_error (function () -> (move_in_column ([], P2)))
+  "column full" ;;
+
+check_expect (make_move (P1, [[0; 0; 0]], 3, 3)) [[1; 0; 0]] ;;
+check_expect (make_move (P1, [[0; 0; 0]; [0; 0; 0]], 1, 1)) [[1; 0; 0]; [0; 0; 0]] ;;
+check_expect (make_move (P1, [[0; 0; 0]; [0; 0; 0]], 2, 1)) [[0; 0; 0]; [1; 0; 0]] ;;
+check_error (function () -> (make_move (P2, [], 9, 9)))
+  "Hey Ocaml, this is not going to happen" ;;
+check_error (function () -> (make_move (P2, [[0]], 11, 9)))
+  "illegal move" ;;
+
+check_expect (row_in_column [1; 0; 0; 1; 2]) 3;;
+
+check_expect (row_column_of_move ([[1; 1; 1]], 3, 3)) (3, [1; 1; 1]) ;;
+check_expect (row_column_of_move ([[1; 1; 1]; [2; 2; 2]], 3, 3)) (3, [1; 1; 1]) ;;
+check_expect (row_column_of_move ([[1; 1; 1]; [2; 0; 2]], 4, 3)) (2, [2; 0; 2]) ;;
+check_error (function () -> (row_column_of_move ([[1; 1; 1]], 9, 3)))
+  "illegal move" ;;
+check_error (function () -> (row_column_of_move ([], 9, 3)))
+  "never going to happen" ;;
+
+check_expect (extract_in_row 3 [1; 2; 0]) 0 ;;
+check_expect (extract_in_row 1 [0; 0; 0]) 0 ;;
+check_error (function () -> (extract_in_row 0 []))
+  "wrong row_index" ;;
+
+check_expect (extract_row ([[1; 1; 0]; [2; 2; 0]; [0; 0; 0]], 3)) [0; 0; 0] ;;
+
+check_expect (check_win_column ([], 2, 0)) false ;;
+check_expect (check_win_column ([], 4, 1)) true ;;
+check_expect (check_win_column ([1; 1], 2, 2)) false ;;
+check_expect (check_win_column ([1; 1; 1; 1], 4, 1)) true ;;
+check_expect (check_win_column ([2; 2; 1; 1; 1; 1; 2], 0, 2)) true ;;
+
+check_expect (check_win_row ([[1; 0; 0]; [1; 2; 1]; [1; 1; 1]; [1; 2; 2]], 1))
+  true ;;
+check_expect (check_win_row ([[0; 0; 0]; [1; 2; 1]], 2)) false ;;
+
+check_expect (make_diagonal_left ([], 1)) [] ;;
+check_expect (make_diagonal_left ([[1; 2; 0]; [1; 2; 1]; [1; 1; 1]], 1)) [2; 1] ;;
+
+check_expect (extract_diag_left_vert []) [] ;;
+check_expect
+  (extract_diag_left_vert [[1; 2; 0; 1]; [1; 2; 1; 2]; [1; 1; 1; 1]])
+    [[1; 2; 1]; [1; 1]; [1]] ;;
+
+check_expect (extract_diag_left_horz [[]; []]) [] ;;
+check_expect
+  (extract_diag_left_horz [[1; 2; 0; 1]; [1; 2; 1; 2]; [1; 1; 1; 1]])
+    [[1; 2; 1]; [2; 1; 1]; [0; 2]; [1]] ;;
+
+check_expect (check_win_diagonal [[1; 2; 0; 1]; [1; 2; 1; 2]; [1; 1; 1; 1]]) false ;;
+check_expect
+  (check_win_diagonal [[1; 2; 1; 1]; [2; 1; 2; 0]; [0; 0; 1; 1]; [1; 1; 1; 1]]) true ;;
+
+check_expect (check_win ([[1; 2; 0; 0]; [1; 2; 1; 2]; [1; 1; 1; 1]], 1)) false ;;
+
+check_expect (not_fullP [1]) false ;;
+check_expect (not_fullP [0; 0; 0]) true ;;
+check_error (function () -> (not_fullP []))
+  "not going to have an empty column as input" ;;
+
+check_expect (not_full_columns ([[1; 2; 0]; [0; 0; 0]], 1)) [Move 1; Move 2] ;;
+check_error (function () -> (not_full_columns ([], 1)))
+  "not going to have an empty board as input" ;;
+
+check_expect (legal_moves (State ((Ongoing (P1)), [[1; 0; 0]; [0; 0; 1]; [1; 2; 2]]))) [Move 1] ;;
+check_expect (legal_moves (State ((Ongoing (P1)), [[1]]))) [] ;;
+
+check_expect
+  (next_state (State ((Ongoing (P1)), [[1; 0; 0]; [0; 0; 1]; [1; 2; 2]])) (Move 1))
+    (State (Ongoing P2, [[1; 1; 0]; [0; 0; 1]; [1; 2; 2]])) ;;
+check_expect
+  (next_state (State ((Win (P1)), [])) (Move 1))
+    (State (Win P1, []));;
+check_expect
+  (next_state (State (Draw, [])) (Move 1)) (State (Draw, [])) ;;
+check_expect (value_helper_helper ([1; 0; 0; 0; 0], [1; 0; 0; 0; 0], pattern_list_positive)) 3. ;;
+check_expect (value_helper_helper ([0; 0; 0; 0; 0], [0; 0; 0; 0; 0], pattern_list_positive)) 0. ;;
+check_expect (value_helper []) 0.;;
+check_expect (value_helper [[1; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0];
+                            [0; 0; 0; 0; 0]]) 3.;;
+
+check_expect (estimate_value (State (Win P1, [[0]]))) infinity ;;
+check_expect (estimate_value (State (Win P2, [[0]]))) neg_infinity ;;
+check_expect (estimate_value (State (Draw, [[0]]))) 0. ;;
+check_expect (estimate_value (State (Ongoing P1,
+                                    [[0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0];
+                                    [0; 0; 0; 0; 0]]))) 0.;;
+
+check_expect (estimate_value (State (Ongoing P1,
+                                        [[1; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0];
+                                        [0; 0; 0; 0; 0]]))) 10.5;;

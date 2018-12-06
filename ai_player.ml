@@ -36,7 +36,7 @@ struct
                          (PlayerGame.legal_moves s))
 
   let next_move s=
-    match minimax (s, 5,
+    match minimax (s, 4,
                    (if (PlayerGame.game_status s) = PlayerGame.Ongoing PlayerGame.P2
                    then neg_infinity
                    else infinity),
@@ -58,7 +58,7 @@ check_expect (minimax (State ((Ongoing P2),
 [1;1;1;2;0];
 [1;0;0;0;0];
 [1;1;1;0;0];
-[2;0;0;0;0]]), 2, neg_infinity, Move 1)) (Move 6, 100.);;
+[2;0;0;0;0]]), 2, neg_infinity, Move 1)) (Move 6, 73.5);;
 
 check_expect (next_move (State ((Ongoing P2),
 [[2;2;1;2;0];
@@ -76,8 +76,8 @@ check_expect (next_move (State ((Ongoing P1),
 [1;1;1;2;0];
 [1;2;0;0;0];
 [1;1;1;0;0];
-[2;0;0;0;0]]))) (Move 2);;
-(*Move 6 is an immediate win, but Move 2 is also a guranteed win*)
+[2;0;0;0;0]]))) (Move 3);;
+(*Move 6 is an immediate win, but Move 3 is also a guranteed win*)
 
 check_expect (next_move (State ((Ongoing P2),
 [[2;2;1;2;0];
