@@ -265,4 +265,44 @@ struct
 	let size = (5, 7)
 end );;
 
+
 (* TODO: test cases for this Game *)
+check_expect (current_player (State ((Ongoing (P1)), []))) P1 ;;
+check_expect (current_player (State ((Ongoing (P2)), []))) P2 ;;
+check_expect (current_player (State ((Win (P1)), []))) P1 ;;
+check_expect (current_player (State ((Win (P2)), []))) P2 ;;
+check_error (function () -> (current_player (State (Draw, []))))
+  "" ;;
+
+check_expect (other_player P1) P2 ;;
+check_expect (other_player P2) P1 ;;
+
+check_expect (create_column 1) [0] ;;
+check_expect (create_column 4) [0; 0; 0; 0] ;;
+
+check_expect (combine_columns ([0], 1)) [[0]] ;;
+check_expect (combine_columns ([0], 4)) [[0]; [0]; [0]; [0]] ;;
+
+check_expect (initialize (1, 1)) [[0]] ;;
+check_expect (initialize (5, 7)) [[0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0];
+                                  [0; 0; 0; 0; 0]] ;;
+check_error (function () -> (initialize (0, -3)))
+  "positive size!" ;;
+
+check_expect (string_of_player P1) "Player 1" ;;
+check_expect (string_of_player P2) "Player 2" ;;
+
+check_expect (string_of_move (Move 7)) "7" ;;
+
+check_expect (transpose [[1; 2; 3]; [4; 5; 6]]) [[1; 4]; [2; 5]; [3; 6]] ;;
+check_error (function () -> (transpose []))
+  "A matrix cannot be 0-dimensional" ;;
+check_error (function () -> (transpose [[]; []]))
+  "A matrix cannot be 0-dimensional" ;;
+
+check_expect (string_of_state (State ((Ongoing (P1)), []))) "It isPlayer 1's turn"
